@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Admin — Hadrion</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Nunito', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+/* LOGIN */
+#login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+.login-box { background: #1e293b; border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.logo { text-align: center; font-size: 48px; margin-bottom: 12px; }
+h1 { text-align: center; font-size: 20px; font-weight: 900; color: #ffd166; margin-bottom: 4px; }
+.sub { text-align: center; font-size: 12px; color: #64748b; margin-bottom: 28px; }
+
+input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid #334155; background: #0f172a; color: #e2e8f0; font-family: inherit; font-size: 14px; font-weight: 700; outline: none; margin-bottom: 10px; }
+input:focus, select:focus, textarea:focus { border-color: #3a86ff; }
+textarea { resize: vertical; min-height: 80px; font-weight: 600; }
+
+.btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-family: inherit; font-weight: 900; font-size: 14px; cursor: pointer; transition: all .15s; }
+.btn-primary { background: linear-gradient(135deg, #3a86ff, #7c3aed); color: white; }
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+.btn-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+.btn-orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+.btn-wa { background: linear-gradient(135deg, #25d366, #128c7e); color: white; }
+.btn-sm { padding: 8px 14px; font-size: 12px; border-radius: 8px; width: auto; }
+.btn-xs { padding: 5px 10px; font-size: 11px; border-radius: 7px; width: auto; }
+
+/* MAIN */
+#main-screen { display: none; padding: 16px; max-width: 640px; margin: 0 auto; padding-bottom: 40px; }
+.header { display: flex; align-items: center; gap: 12px; padding: 16px 0 20px; border-bottom: 2px solid #1e293b; margin-bottom: 20px; }
+
+.section { background: #1e293b; border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+.section-title { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+label { font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 4px; display: block; }
+
+/* TABS */
+.tabs { display: flex; gap: 5px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { flex: 1; min-width: 80px; padding: 10px 6px; border-radius: 10px; border: 2px solid #334155; background: transparent; color: #64748b; font-family: inherit; font-weight: 800; font-size: 11px; cursor: pointer; text-align: center; }
+.tab.active { border-color: #3a86ff; background: #1e3a5f; color: #93c5fd; }
+
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+.stat-box { background: #1e293b; border-radius: 12px; padding: 12px; text-align: center; }
+.stat-n { font-size: 22px; font-weight: 900; color: #ffd166; }
+.stat-n.green { color: #22c55e; }
+.stat-n.blue { color: #60a5fa; }
+.stat-n.red { color: #f87171; }
+.stat-l { font-size: 10px; color: #64748b; margin-top: 2px; }
+
+/* CARDS */
+.code-card { background: #0f172a; border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 2px solid #334155; }
+.code-card.suscripto { border-color: #22c55e44; }
+.code-card.vencido { border-color: #ef444444; }
+.code-card.prueba { border-color: #f59e0b44; }
+.code-top { display: flex; align-items: flex-start; gap: 10px; }
+.code-badge { font-size: 18px; font-weight: 900; color: #ffd166; font-family: monospace; white-space: nowrap; }
+.code-info { flex: 1; }
+.code-name { font-size: 13px; font-weight: 800; color: #e2e8f0; }
+.code-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+.code-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; letter-spacing: .5px; margin-left: 4px; }
+.badge-beta { background: #1e3a5f; color: #60a5fa; }
+.badge-pago { background: #14532d; color: #86efac; }
+.badge-vencido { background: #450a0a; color: #fca5a5; }
+.badge-prueba { background: #431407; color: #fdba74; }
+
+/* SOLICITUDES */
+.solicitud-card { background: #0f172a; border-radius: 12px; padding: 16px; margin-bottom: 10px; border: 2px solid #ffd16633; }
+.solicitud-nombre { font-size: 15px; font-weight: 900; color: #ffd166; margin-bottom: 4px; }
+.solicitud-datos { font-size: 12px; color: #94a3b8; margin-bottom: 10px; line-height: 1.6; }
+.solicitud-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* PAGOS TAB */
+.pago-plan { background: #0f172a; border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 2px solid #334155; }
+.pago-plan-nombre { font-size: 15px; font-weight: 900; color: #ffd166; margin-bottom: 10px; }
+.precio-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; }
+.precio-input-wrap { flex: 1; }
+.link-input { font-size: 12px; font-weight: 600; padding: 10px 12px; }
+
+/* SURVEY */
+.survey-card { background: #0f172a; border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 2px solid #334155; }
+.survey-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.survey-score { font-size: 20px; font-weight: 900; color: #ffd166; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; }
+.tag-cap { background: #1e3a5f; color: #60a5fa; }
+.tag-pro { background: #1a2d1e; color: #86efac; }
+.empty { text-align: center; color: #475569; padding: 24px; font-size: 13px; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 9999; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: #1e293b; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; }
+.modal-title { font-size: 16px; font-weight: 900; color: #ffd166; margin-bottom: 6px; }
+.modal-sub { font-size: 12px; color: #64748b; margin-bottom: 18px; line-height: 1.5; }
+.modal-btn { width: 100%; padding: 13px; border-radius: 10px; border: none; font-family: inherit; font-weight: 900; font-size: 13px; cursor: pointer; margin-bottom: 8px; color: white; }
+
+/* DIAS SELECTOR */
+.dias-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.dias-chip { padding: 7px 12px; border-radius: 8px; border: 2px solid #334155; background: transparent; color: #64748b; font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; }
+.dias-chip.active { border-color: #3a86ff; background: #1e3a5f; color: #93c5fd; }
+.dias-custom-inp { width: 70px; padding: 7px 10px; border-radius: 8px; margin-bottom: 0; font-size: 12px; text-align: center; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #22c55e; color: white; padding: 10px 20px; border-radius: 20px; font-weight: 900; font-size: 13px; z-index: 99999; display: none; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo">🔐</div>
+    <h1>Admin Hadrion</h1>
+    <p class="sub">Panel de control · Acceso exclusivo</p>
+    <label>Contraseña de administrador</label>
+    <input type="password" id="admin-pass" placeholder="Ingresá la contraseña" onkeydown="if(event.key==='Enter')adminLogin()">
+    <button class="btn btn-primary" onclick="adminLogin()">INGRESAR</button>
+    <p id="login-error" style="color:#ef4444;font-size:12px;text-align:center;margin-top:8px;display:none">Contraseña incorrecta</p>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen">
+  <div class="header">
+    <div style="font-size:32px">📊</div>
+    <div>
+      <div style="font-size:18px;font-weight:900;color:#ffd166">Admin — Hadrion</div>
+      <div style="font-size:11px;color:#64748b">Panel de control de usuarios y cobros</div>
+    </div>
+    <button class="btn btn-sm" onclick="logout()" style="margin-left:auto;background:#334155;color:#94a3b8;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-family:inherit;font-weight:700">Salir</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-n blue" id="st-beta">-</div><div class="stat-l">BETA</div></div>
+    <div class="stat-box"><div class="stat-n green" id="st-activos">-</div><div class="stat-l">ACTIVOS</div></div>
+    <div class="stat-box"><div class="stat-n red" id="st-vencidos">-</div><div class="stat-l">VENCIDOS</div></div>
+    <div class="stat-box"><div class="stat-n" id="st-surveys">-</div><div class="stat-l">ENCUESTAS</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('solicitudes',this)">🔔 Solicitudes</button>
+    <button class="tab" onclick="switchTab('usuarios',this)">👥 Usuarios</button>
+    <button class="tab" onclick="switchTab('beta',this)">🔬 Beta</button>
+    <button class="tab" onclick="switchTab('cobros',this)">💰 Cobros</button>
+    <button class="tab" onclick="switchTab('surveys',this)">📋 Encuestas</button>
+  </div>
+
+  <!-- TAB: SOLICITUDES -->
+  <div id="tab-solicitudes">
+    <div class="section">
+      <div class="section-title">🔔 Solicitudes de acceso pendientes</div>
+      <div id="solicitudes-list"><div class="empty">Sin solicitudes pendientes ✅</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">➕ Dar acceso manualmente</div>
+      <div class="form-row">
+        <div><label>Nombre completo</label><input type="text" id="man-nombre" placeholder="María García"></div>
+        <div><label>App</label>
+          <select id="man-app">
+            <option value="ComuniCAP">ComuniCAP</option>
+            <option value="ComuniPro">ComuniPro</option>
+            <option value="Ambas">Ambas</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Teléfono WhatsApp</label><input type="tel" id="man-tel" placeholder="598912345678"></div>
+        <div><label>Email (opcional)</label><input type="email" id="man-email" placeholder="email@ejemplo.com"></div>
+      </div>
+      <div>
+        <label>Tipo de acceso</label>
+        <div class="dias-row" style="margin-bottom:10px">
+          <button class="dias-chip active" id="tipo-pago-btn" onclick="setTipoManual('pago',this)">✅ Pago confirmado</button>
+          <button class="dias-chip" id="tipo-beta-btn" onclick="setTipoManual('beta',this)">🔬 Beta/prueba</button>
+        </div>
+      </div>
+      <div>
+        <label>Días de acceso</label>
+        <div class="dias-row">
+          <button class="dias-chip active" onclick="setDiasManual(30,this)">30 días</button>
+          <button class="dias-chip" onclick="setDiasManual(60,this)">60 días</button>
+          <button class="dias-chip" onclick="setDiasManual(90,this)">90 días</button>
+          <button class="dias-chip" onclick="setDiasManual(365,this)">1 año</button>
+          <input class="dias-custom-inp" type="number" id="man-dias-custom" min="1" max="999" placeholder="días" oninput="setDiasManual(parseInt(this.value)||30,null)">
+        </div>
+      </div>
+      <div id="recordatorio-pago" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;font-size:12px;color:#86efac;margin-bottom:10px;line-height:1.5;">
+        💰 <strong>Recordatorio:</strong> Solo dar acceso DESPUÉS de confirmar el pago. Al crear, se abrirá WhatsApp con las credenciales.
+      </div>
+      <button class="btn btn-green" onclick="darAccesoManual()">✅ CONFIRMAR PAGO Y DAR ACCESO</button>
+    </div>
+  </div>
+
+  <!-- TAB: USUARIOS -->
+  <div id="tab-usuarios" style="display:none">
+    <div class="section">
+      <div class="section-title">👥 Usuarios activos</div>
+      <div id="usuarios-list"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: BETA -->
+  <div id="tab-beta" style="display:none">
+    <div class="section">
+      <div class="section-title">➕ Generar código beta</div>
+      <div class="form-row">
+        <div><label>Nombre del usuario</label><input type="text" id="new-name" placeholder="Ej: María García"></div>
+        <div><label>App</label>
+          <select id="new-app">
+            <option value="ComuniCAP">ComuniCAP</option>
+            <option value="ComuniPro">ComuniPro</option>
+            <option value="Ambas">Ambas apps</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Email (para resultados)</label><input type="email" id="new-email" placeholder="email@ejemplo.com"></div>
+        <div><label>Días de prueba</label>
+          <select id="new-days">
+            <option value="14">14 días</option>
+            <option value="20" selected>20 días</option>
+            <option value="30">30 días</option>
+            <option value="7">7 días</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="generateCode()" style="margin-top:4px">🎲 GENERAR CÓDIGO BETA</button>
+    </div>
+    <div class="section">
+      <div class="section-title">🔑 Códigos activos</div>
+      <div id="codes-list"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: COBROS -->
+  <div id="tab-cobros" style="display:none">
+    <div class="section">
+      <div class="section-title">💰 Precios y medios de pago</div>
+
+      <div class="pago-plan">
+        <div class="pago-plan-nombre">👤 Plan Individual — ComuniCAP / ComuniPro</div>
+        <div class="form-row">
+          <div class="precio-input-wrap"><label>Precio UYU/mes</label><input type="number" id="precio-ind-uyu" placeholder="500"></div>
+          <div class="precio-input-wrap"><label>Precio USD/mes</label><input type="number" id="precio-ind-usd" placeholder="12"></div>
+        </div>
+        <label>Link MercadoPago (plan individual)</label>
+        <input class="link-input" type="url" id="link-ind-mp" placeholder="https://mpago.la/tu-link-aqui">
+      </div>
+
+      <div class="pago-plan">
+        <div class="pago-plan-nombre">🏥 Plan Clínica / Colegio</div>
+        <div class="form-row">
+          <div class="precio-input-wrap"><label>Precio UYU/mes</label><input type="number" id="precio-cli-uyu" placeholder="2000"></div>
+          <div class="precio-input-wrap"><label>Precio USD/mes</label><input type="number" id="precio-cli-usd" placeholder="50"></div>
+        </div>
+        <label>Link MercadoPago (plan clínica)</label>
+        <input class="link-input" type="url" id="link-cli-mp" placeholder="https://mpago.la/tu-link-aqui">
+      </div>
+
+      <div class="pago-plan">
+        <div class="pago-plan-nombre">🌎 Pagos internacionales</div>
+        <label>Link Stripe / PayPal</label>
+        <input class="link-input" type="url" id="link-stripe" placeholder="https://buy.stripe.com/... o PayPal.me/...">
+      </div>
+
+      <button class="btn btn-primary" onclick="guardarPrecios()">💾 GUARDAR PRECIOS</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📲 Flujo de ventas recomendado</div>
+      <div style="font-size:13px;line-height:1.9;color:#94a3b8">
+        <div>1️⃣ <strong style="color:#e2e8f0">Te escriben por DM o WhatsApp</strong> pidiendo acceso</div>
+        <div>2️⃣ <strong style="color:#e2e8f0">Les enviás el link de MercadoPago</strong> con el precio</div>
+        <div>3️⃣ <strong style="color:#e2e8f0">Confirmás el pago</strong> en tu app de MercadoPago</div>
+        <div>4️⃣ <strong style="color:#e2e8f0">Venís acá → Dar acceso</strong> → WhatsApp se abre automático</div>
+        <div>5️⃣ <strong style="color:#e2e8f0">El usuario recibe credenciales</strong> y entra de inmediato</div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:rgba(34,197,94,.08);border-radius:10px;font-size:12px;color:#86efac;line-height:1.5">
+        💡 <strong>Tip:</strong> MercadoPago.com.uy te notifica al instante cuando te pagan. Comisión ~3.99% + IVA. Podés crear suscripciones mensuales automáticas.
+      </div>
+      <button class="btn btn-wa" style="margin-top:12px" onclick="abrirMercadoPago()">💳 IR A MERCADOPAGO.COM.UY</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📊 Publicidad lista para usar</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm btn-primary" onclick="mostrarPublicidad('instagram')">📸 Instagram</button>
+        <button class="btn btn-sm btn-orange" onclick="mostrarPublicidad('whatsapp')">💬 WhatsApp</button>
+      </div>
+      <div id="publicidad-preview" style="display:none;background:#0f172a;border-radius:12px;padding:14px;font-size:12px;color:#94a3b8;line-height:1.7;white-space:pre-wrap;word-break:break-word"></div>
+      <button id="btn-copiar-pub" class="btn btn-sm btn-green" style="display:none;margin-top:8px" onclick="copiarPublicidad()">📋 COPIAR</button>
+    </div>
+  </div>
+
+  <!-- TAB: SURVEYS -->
+  <div id="tab-surveys" style="display:none">
+    <div class="section">
+      <div class="section-title">📋 Cuestionarios recibidos</div>
+      <div id="surveys-list"><div class="empty">Cargando...</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📊 Estadísticas</div>
+      <div id="stats-content"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RENOVAR/ACCESO -->
+<div class="modal-overlay" id="modal-acceso">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-titulo">Gestionar acceso</div>
+    <div class="modal-sub" id="modal-sub">Confirmá el pago antes de continuar.</div>
+    <label style="margin-bottom:6px">Días de acceso</label>
+    <div class="dias-row">
+      <button class="dias-chip active" onclick="setDiasModal(30,this)">30 días</button>
+      <button class="dias-chip" onclick="setDiasModal(60,this)">60 días</button>
+      <button class="dias-chip" onclick="setDiasModal(90,this)">90 días</button>
+      <button class="dias-chip" onclick="setDiasModal(365,this)">1 año</button>
+      <input class="dias-custom-inp" type="number" id="modal-dias-inp" min="1" max="999" placeholder="días" oninput="setDiasModal(parseInt(this.value)||30,null)">
+    </div>
+    <button class="modal-btn btn-green" onclick="confirmarAccesoModal()">✅ CONFIRMAR PAGO Y ACTIVAR</button>
+    <button class="modal-btn btn-wa" onclick="reenviarWAModal()">📲 REENVIAR WHATSAPP</button>
+    <button class="modal-btn" style="background:#334155;color:#94a3b8" onclick="cerrarModal()">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = "https://lgpqyjevdwstbnerawmp.supabase.co";
+const SB_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncHF5amV2ZHdzdGJuZXJhd21wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMzM1OTgsImV4cCI6MjA5MjgwOTU5OH0.GMPbwHdxj_aRLaJgDHCkDA5L1KHAwLJLkO9LYOpI8pA";
+const ADMIN_PW = "Hadrion2026!";
+
+const SB_H = () => ({ apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, 'Content-Type': 'application/json' });
+
+let _tipoManual = 'pago';
+let _diasManual = 30;
+let _diasModal  = 30;
+let _modalData  = null;
+
+/* ═══════════════════ LOGIN ═══════════════════ */
+function adminLogin() {
+  if (document.getElementById('admin-pass').value === ADMIN_PW) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display  = 'block';
+    loadAll();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+function logout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-screen').style.display  = 'none';
+  document.getElementById('admin-pass').value = '';
+}
+
+/* ═══════════════════ TABS ═══════════════════ */
+function switchTab(tab, btn) {
+  ['solicitudes','usuarios','beta','cobros','surveys'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ═══════════════════ HELPERS ═══════════════════ */
+function toast(msg, color='#22c55e') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2800);
+}
+
+function fechaDesdeHoy(dias) {
+  const d = new Date(); d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0,10);
+}
+
+function _normFecha(fecha) {
+  // Normaliza "2026-07-11T00:00:00" o "2026-07-11" a "2026-07-11"
+  if (!fecha) return null;
+  return String(fecha).slice(0, 10);
+}
+
+function diasRestantes(fecha) {
+  const f = _normFecha(fecha);
+  if (!f) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return Math.round((new Date(f+'T00:00:00') - hoy) / 86400000);
+}
+
+function fmtFecha(f) {
+  const n = _normFecha(f);
+  if (!n) return '';
+  const [y,m,d] = n.split('-'); return d+'/'+m+'/'+y;
+}
+
+function genCodigo(prefix) {
+  const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const r = n => Array.from({length:n},()=>ch[Math.floor(Math.random()*ch.length)]).join('');
+  if (prefix==='BETA') return 'BETA-'+r(4)+'-'+r(4);
+  if (prefix==='CP')   return 'CP-'+r(6);
+  return 'CAP-'+r(6);
+}
+
+/* ═══════════════════ UI HELPERS ═══════════════════ */
+function setTipoManual(tipo, btn) {
+  _tipoManual = tipo;
+  document.querySelectorAll('#tipo-pago-btn,#tipo-beta-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('recordatorio-pago').style.display = tipo==='pago' ? 'block' : 'none';
+  document.querySelector('[onclick="darAccesoManual()"]').textContent =
+    tipo==='pago' ? '✅ CONFIRMAR PAGO Y DAR ACCESO' : '🔬 DAR ACCESO DE PRUEBA';
+}
+
+function setDiasManual(n, btn) {
+  _diasManual = n||30;
+  if (btn) { document.querySelectorAll('#tab-solicitudes .dias-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+}
+
+function setDiasModal(n, btn) {
+  _diasModal = n||30;
+  if (btn) { document.querySelectorAll('#modal-acceso .dias-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+}
+
+/* ═══════════════════ CARGAR TODO ═══════════════════ */
+async function loadAll() {
+  loadCodesAdmin();
+  loadSurveys();
+  cargarPrecios();
+}
+
+/* ═══════════════════ DAR ACCESO MANUAL ═══════════════════ */
+async function darAccesoManual() {
+  const nombre = document.getElementById('man-nombre').value.trim();
+  const app    = document.getElementById('man-app').value;
+  const tel    = document.getElementById('man-tel').value.trim().replace(/\D/g,'');
+  const email  = document.getElementById('man-email').value.trim();
+  if (!nombre) { toast('Ingresá el nombre','#ef4444'); return; }
+
+  const cval = parseInt(document.getElementById('man-dias-custom').value);
+  if (cval>0) _diasManual = cval;
+
+  const prefijo  = app === 'ComuniPro' ? 'CP' : 'CAP';
+  const codigo   = genCodigo(prefijo);
+  const vence    = fechaDesdeHoy(_diasManual);
+  const dataExp  = fechaDesdeHoy(_diasManual + 30);
+
+  try {
+    await fetch(SB_URL+'/rest/v1/licencias2', {
+      method: 'POST',
+      headers: { ...SB_H(), Prefer: 'return=minimal' },
+      body: JSON.stringify({ clave: codigo, nombre: 'comunicap', apellido: nombre, plan: app==='Ambas'?'clinica':'individual', fecha_vencimiento: vence, activa: true, tipo_acceso: _tipoManual, data_expira: dataExp, email: email||null, telefono: tel||null })
+    });
+    toast('✅ Acceso creado: '+codigo);
+    document.getElementById('man-nombre').value='';
+    document.getElementById('man-tel').value='';
+    document.getElementById('man-email').value='';
+    // Abrir WhatsApp
+    enviarWA(codigo, nombre, app, vence, tel);
+    loadCodesAdmin();
+  } catch(e) { toast('❌ Error: '+e.message,'#ef4444'); }
+}
+
+/* ═══════════════════ USUARIOS ACTIVOS ═══════════════════ */
+async function loadCodesAdmin() {
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/licencias2?order=created_at.desc&limit=100', { headers: SB_H() });
+    const data = await res.json();
+
+    let beta=0, activos=0, vencidos=0;
+    data.forEach(u => {
+      const dr = diasRestantes(u.fecha_vencimiento);
+      if (u.tipo_acceso==='beta') beta++;
+      else if (dr!==null && dr<0) vencidos++;
+      else activos++;
+    });
+    document.getElementById('st-beta').textContent = beta;
+    document.getElementById('st-activos').textContent = activos;
+    document.getElementById('st-vencidos').textContent = vencidos;
+
+    const list = document.getElementById('usuarios-list');
+    if (!data.length) { list.innerHTML='<div class="empty">Sin usuarios aún</div>'; return; }
+
+    list.innerHTML = data.map(u => {
+      const dr = diasRestantes(u.fecha_vencimiento);
+      let badge='', clase='code-card', venceStr='';
+      if (u.tipo_acceso==='beta') { badge='<span class="badge badge-beta">BETA</span>'; clase+=' prueba'; }
+      else if (dr!==null&&dr<0) { badge='<span class="badge badge-vencido">VENCIDO</span>'; clase+=' vencido'; }
+      else { badge='<span class="badge badge-pago">ACTIVO</span>'; clase+=' suscripto'; }
+
+      if (dr!==null) {
+        if (dr<0) venceStr=`<div style="font-size:11px;color:#f87171;margin-top:3px">⏰ Venció ${fmtFecha(u.fecha_vencimiento)} · Datos retenidos ${Math.max(0,30+dr)} días más</div>`;
+        else if (dr<=7) venceStr=`<div style="font-size:11px;color:#fbbf24;margin-top:3px">⚠️ Vence en ${dr} días (${fmtFecha(u.fecha_vencimiento)})</div>`;
+        else venceStr=`<div style="font-size:11px;color:#86efac;margin-top:3px">✅ Vence ${fmtFecha(u.fecha_vencimiento)} (${dr} días)</div>`;
+      }
+
+      return `<div class="${clase}">
+        <div class="code-top">
+          <div style="flex:1">
+            <div class="code-name">${u.apellido||u.nombre||'—'} ${badge}</div>
+            <div class="code-badge">${u.clave}</div>
+            <div class="code-meta">${u.plan||''} · ${u.email||'sin email'}</div>
+            ${venceStr}
+          </div>
+        </div>
+        <div class="code-actions">
+          <button class="btn btn-xs btn-wa" onclick="enviarWA('${u.clave}','${(u.apellido||u.nombre||'').replace(/'/g,"\\'")}','${u.plan||''}','${u.fecha_vencimiento||''}','${u.telefono||''}')">📲 WA</button>
+          <button class="btn btn-xs btn-primary" onclick="abrirModal('${u.id}','${(u.apellido||u.nombre||'').replace(/'/g,"\\'")}','${u.clave}','${u.fecha_vencimiento||''}','${u.telefono||''}')">🔄 Renovar</button>
+          <button class="btn btn-xs" style="background:#334155;color:#94a3b8;border:none;cursor:pointer;border-radius:7px;padding:5px 10px;font-family:inherit;font-size:11px;font-weight:800" onclick="toggleActivo('${u.id}',${u.activa!==false})">${u.activa!==false?'🚫 Suspender':'✅ Activar'}</button>
+          <button class="btn btn-xs btn-danger" onclick="eliminarUsuario('${u.id}','${u.clave}','${(u.apellido||u.nombre||'').replace(/'/g,"\\'")}')">🗑 Eliminar</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('usuarios-list').innerHTML='<div class="empty">Error al cargar</div>';
+  }
+}
+
+async function toggleActivo(id, suspender) {
+  await fetch(SB_URL+'/rest/v1/licencias2?id=eq.'+id, {
+    method:'PATCH', headers:{...SB_H(),Prefer:'return=minimal'},
+    body: JSON.stringify({ activa: !suspender })
+  });
+  toast(suspender?'🚫 Usuario suspendido':'✅ Usuario activado', suspender?'#f59e0b':'#22c55e');
+  loadCodesAdmin();
+}
+
+async function eliminarUsuario(id, clave, nombre) {
+  if (!confirm('¿Eliminar a ' + nombre + ' (' + clave + ') de Supabase? Esta acción no se puede deshacer.')) return;
+  try {
+    // Eliminar de licencias2
+    await fetch(SB_URL+'/rest/v1/licencias2?id=eq.'+id, {
+      method:'DELETE', headers:SB_H()
+    });
+    // Si es código BETA, eliminar también de beta_activations
+    if (clave.startsWith('BETA-')) {
+      await fetch(SB_URL+'/rest/v1/beta_activations?code=eq.'+encodeURIComponent(clave), {
+        method:'DELETE', headers:SB_H()
+      });
+    }
+    toast('🗑 ' + nombre + ' eliminado', '#ef4444');
+    loadCodesAdmin();
+  } catch(e) {
+    toast('❌ Error al eliminar: '+e.message, '#ef4444');
+  }
+}
+
+/* ═══════════════════ MODAL RENOVAR ═══════════════════ */
+function abrirModal(id, nombre, codigo, fechaVence, tel) {
+  _modalData = { id, nombre, codigo, fechaVence, tel };
+  document.getElementById('modal-titulo').textContent = 'Renovar — '+nombre;
+  const dr = diasRestantes(fechaVence);
+  let sub = 'Código: '+codigo;
+  if (dr!==null) sub += dr<0 ? ' · ⚠️ Venció hace '+Math.abs(dr)+' días' : ' · Vence en '+dr+' días';
+  sub += '\n\n💰 Confirmá el pago antes de activar.';
+  document.getElementById('modal-sub').textContent = sub;
+  document.getElementById('modal-acceso').classList.add('open');
+}
+function cerrarModal() {
+  document.getElementById('modal-acceso').classList.remove('open');
+  _modalData = null;
+}
+async function confirmarAccesoModal() {
+  if (!_modalData) return;
+  const cval = parseInt(document.getElementById('modal-dias-inp').value);
+  if (cval>0) _diasModal = cval;
+  const nuevaFecha = fechaDesdeHoy(_diasModal);
+  await fetch(SB_URL+'/rest/v1/licencias2?id=eq.'+_modalData.id, {
+    method:'PATCH', headers:{...SB_H(),Prefer:'return=minimal'},
+    body: JSON.stringify({ fecha_vencimiento: nuevaFecha, data_expira: fechaDesdeHoy(_diasModal+30), activa: true, tipo_acceso: 'pago' })
+  });
+  toast('✅ Renovado por '+_diasModal+' días');
+  enviarWA(_modalData.codigo, _modalData.nombre, '', nuevaFecha, _modalData.tel);
+  cerrarModal();
+  loadCodesAdmin();
+}
+function reenviarWAModal() {
+  if (!_modalData) return;
+  enviarWA(_modalData.codigo, _modalData.nombre, '', _modalData.fechaVence, _modalData.tel);
+}
+
+/* ═══════════════════ BETA CODES ═══════════════════ */
+function generateCode() {
+  const name  = document.getElementById('new-name').value.trim();
+  const app   = document.getElementById('new-app').value;
+  const email = document.getElementById('new-email').value.trim();
+  const days  = parseInt(document.getElementById('new-days').value);
+  if (!name) { toast('Ingresá el nombre','#ef4444'); return; }
+
+  const code   = genCodigo('BETA');
+  const expiry = fechaDesdeHoy(days);
+
+  fetch(SB_URL+'/rest/v1/beta_codes', {
+    method:'POST',
+    headers:{...SB_H(), Prefer:'return=representation'},
+    body: JSON.stringify({ code, user_name:name, user_email:email||null, app, days, expiry_date:expiry, active:true, created_at:new Date().toISOString() })
+  }).then(r=>r.json()).then(() => {
+    toast('✅ Código generado: '+code);
+    document.getElementById('new-name').value='';
+    document.getElementById('new-email').value='';
+    navigator.clipboard?.writeText(code);
+    mostrarTarjetaBeta(code, name, app, expiry, days);
+    loadBetaCodes();
+  }).catch(() => {
+    toast('✅ '+code+' (sin conexión — copiado)');
+    navigator.clipboard?.writeText(code);
+    mostrarTarjetaBeta(code, name, app, expiry, days);
+  });
+}
+
+function mostrarTarjetaBeta(code, name, app, expiry, days) {
+  const ov = document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`<div style="background:#1e293b;border-radius:20px;padding:28px;max-width:340px;width:100%;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">🎉</div>
+    <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:4px">Código beta para</div>
+    <div style="font-size:17px;font-weight:900;color:white;margin-bottom:16px">${name}</div>
+    <div style="background:#0f172a;border-radius:14px;padding:16px;margin-bottom:16px">
+      <div style="font-size:26px;font-weight:900;color:#ffd166;letter-spacing:2px;font-family:monospace">${code}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:6px">${app} · ${days} días · Vence ${expiry}</div>
+    </div>
+    <div style="font-size:12px;color:#22c55e;margin-bottom:14px">📋 Copiado al portapapeles</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="shareCodeBeta('${code}','${name}','${app}','${expiry}')" style="flex:1;padding:11px;background:linear-gradient(135deg,#25d366,#128c7e);color:white;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">💬 WhatsApp</button>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:11px;background:#334155;color:#94a3b8;border:none;border-radius:10px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer">Cerrar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+async function loadBetaCodes() {
+  const list = document.getElementById('codes-list');
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/beta_codes?order=created_at.desc&limit=50', { headers: SB_H() });
+    const codes = await res.json();
+    if (!codes.length) { list.innerHTML='<div class="empty">Sin códigos aún</div>'; return; }
+    const today = new Date().toISOString().slice(0,10);
+    list.innerHTML = codes.map(c => {
+      const exp = c.expiry_date < today;
+      const dl  = Math.ceil((new Date(c.expiry_date)-new Date())/86400000);
+      return `<div class="code-card ${exp?'vencido':'suscripto'}">
+        <div class="code-top">
+          <div style="flex:1">
+            <div class="code-name">${c.user_name}</div>
+            <div class="code-badge">${c.code}</div>
+            <div class="code-meta" style="color:${exp?'#f87171':'#86efac'}">${exp?'⏰ Vencido':'✅ '+dl+'d'} · ${c.app}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button onclick="shareCodeBeta('${c.code}','${c.user_name}','${c.app}','${c.expiry_date}')" class="btn btn-xs btn-wa">💬</button>
+            <button onclick="revokeCode('${c.code}')" class="btn btn-xs btn-danger">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='<div class="empty">Error al cargar</div>'; }
+}
+
+async function revokeCode(code) {
+  if (!confirm('¿Eliminar el código ' + code + ' de Supabase? Esta acción no se puede deshacer.')) return;
+  try {
+    // Eliminar código de beta_codes
+    await fetch(SB_URL+'/rest/v1/beta_codes?code=eq.'+encodeURIComponent(code), {
+      method:'DELETE', headers:SB_H()
+    });
+    // Eliminar activaciones asociadas
+    await fetch(SB_URL+'/rest/v1/beta_activations?code=eq.'+encodeURIComponent(code), {
+      method:'DELETE', headers:SB_H()
+    });
+    toast('🗑 Código eliminado', '#ef4444');
+    loadBetaCodes();
+  } catch(e) {
+    toast('❌ Error: '+e.message, '#ef4444');
+  }
+}
+
+/* ═══════════════════ WHATSAPP ═══════════════════ */
+function enviarWA(codigo, nombre, plan, fechaVence, tel) {
+  const appLinks = {
+    'ComuniCAP': 'https://comunipro2026-oss.github.io/comunica-aac/',
+    'ComuniPro': 'https://comunipro2026-oss.github.io/comunicador-aac/',
+    'Ambas': 'https://comunipro2026-oss.github.io/comunica-aac/'
+  };
+  const link = appLinks[plan] || appLinks['ComuniCAP'];
+  const venceStr = fechaVence ? `\nVálido hasta: *${fmtFecha(fechaVence)}*` : '';
+  const msg = `✅ *Hola ${nombre}!*\n\nTu acceso a ComuniCAP / ComuniPro está activado 🎉\n\nTu código es:\n*${codigo}*${venceStr}\n\nIngresá acá:\n${link}\n\nCualquier consulta escribime 💬\n_Adriana Soba — Fonoaudióloga · Hadrion_`;
+  const url = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function shareCodeBeta(code, name, app, expiry) {
+  const appLinks = { 'ComuniCAP':'https://comunipro2026-oss.github.io/comunica-aac/', 'ComuniPro':'https://comunipro2026-oss.github.io/comunicador-aac/', 'Ambas':'https://comunipro2026-oss.github.io/comunica-aac/' };
+  const link = appLinks[app]||'';
+  const msg = `🎉 Hola ${name}!\n\nTu código de acceso beta para *${app}* de Hadrion es:\n\n*${code}*\n\nVálido hasta el ${expiry}.\n\n🔗 Ingresá acá: ${link}?beta=${code}\n\nCualquier consulta escribime 💬\n_Adriana Soba — Fonoaudióloga · Hadrion_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg));
+}
+
+/* ═══════════════════ PRECIOS ═══════════════════ */
+function cargarPrecios() {
+  const p = JSON.parse(localStorage.getItem('hadrion_precios')||'{}');
+  if (p.ind_uyu) document.getElementById('precio-ind-uyu').value=p.ind_uyu;
+  if (p.ind_usd) document.getElementById('precio-ind-usd').value=p.ind_usd;
+  if (p.cli_uyu) document.getElementById('precio-cli-uyu').value=p.cli_uyu;
+  if (p.cli_usd) document.getElementById('precio-cli-usd').value=p.cli_usd;
+  if (p.link_ind_mp) document.getElementById('link-ind-mp').value=p.link_ind_mp;
+  if (p.link_cli_mp) document.getElementById('link-cli-mp').value=p.link_cli_mp;
+  if (p.link_stripe) document.getElementById('link-stripe').value=p.link_stripe;
+}
+
+function guardarPrecios() {
+  const p = {
+    ind_uyu: document.getElementById('precio-ind-uyu').value,
+    ind_usd: document.getElementById('precio-ind-usd').value,
+    cli_uyu: document.getElementById('precio-cli-uyu').value,
+    cli_usd: document.getElementById('precio-cli-usd').value,
+    link_ind_mp: document.getElementById('link-ind-mp').value,
+    link_cli_mp: document.getElementById('link-cli-mp').value,
+    link_stripe: document.getElementById('link-stripe').value,
+  };
+  localStorage.setItem('hadrion_precios', JSON.stringify(p));
+  toast('💾 Precios guardados');
+}
+
+function abrirMercadoPago() {
+  window.open('https://www.mercadopago.com.uy/herramientas/cobros','_blank');
+}
+
+/* ═══════════════════ PUBLICIDAD ═══════════════════ */
+let _pubTexto = '';
+function mostrarPublicidad(tipo) {
+  const p = JSON.parse(localStorage.getItem('hadrion_precios')||'{}');
+  const uyu = p.ind_uyu||'500';
+  const usd = p.ind_usd||'12';
+
+  const textos = {
+    instagram: `🗣️✨ ¿Trabajás con comunicación aumentativa y alternativa?
+
+ComuniCAP y ComuniPro son apps diseñadas por una fonoaudióloga uruguaya para facilitar la comunicación de personas con autismo, TEA, parálisis cerebral y otras condiciones.
+
+📱 Pictogramas organizados por categorías
+🗣️ Síntesis de voz en español
+📋 Panel personalizable para cada usuario
+🔍 Buscador integrado
+⚡ Funciona sin internet
+
+💰 Desde $${uyu} UYU / USD ${usd} por mes
+
+Escribime por DM o WhatsApp para más información 💬
+
+#ComunicacionAumentativa #AAC #Autismo #TEA #Fonoaudiología #Uruguay #ComuniCAP #Hadrion #PictogramasAAC #InclusionEducativa`,
+
+    whatsapp: `Hola! 👋
+
+Te cuento que tengo disponible *ComuniCAP* y *ComuniPro*, apps de comunicación aumentativa y alternativa (CAA) creadas especialmente para personas con autismo, TEA y otras condiciones comunicativas.
+
+✅ Pictogramas en español
+✅ Voz integrada
+✅ Funciona sin internet
+✅ Fácil de usar para toda la familia
+
+💰 *$${uyu} UYU / USD ${usd} por mes*
+
+Si querés probarlo tengo una versión de prueba disponible 🔬
+
+¿Te interesa? Escribime y te cuento más 😊`
+  };
+
+  _pubTexto = textos[tipo];
+  const prev = document.getElementById('publicidad-preview');
+  const btn  = document.getElementById('btn-copiar-pub');
+  prev.textContent = _pubTexto;
+  prev.style.display = 'block';
+  btn.style.display = 'inline-block';
+}
+
+function copiarPublicidad() {
+  navigator.clipboard?.writeText(_pubTexto).then(()=>toast('📋 Copiado al portapapeles'));
+}
+
+/* ═══════════════════ SURVEYS ═══════════════════ */
+async function loadSurveys() {
+  const list  = document.getElementById('surveys-list');
+  const stats = document.getElementById('stats-content');
+  document.getElementById('st-surveys').textContent = '…';
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/beta_surveys?order=submitted_at.desc&limit=100', { headers: SB_H() });
+    const surveys = await res.json();
+    document.getElementById('st-surveys').textContent = surveys.length;
+
+    if (!surveys.length) {
+      list.innerHTML='<div class="empty">Sin cuestionarios aún</div>';
+      stats.innerHTML='<div class="empty">Sin datos</div>';
+      return;
+    }
+
+    list.innerHTML = surveys.map(s => {
+      const date = new Date(s.submitted_at).toLocaleDateString('es-UY');
+      return `<div class="survey-card">
+        <div class="survey-header">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:white">${s.user_name||'Anónimo'}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">${date} · ${s.user_code||''}</div>
+            <span class="tag ${s.app==='ComuniCAP'?'tag-cap':'tag-pro'}" style="margin-top:4px">${s.app}</span>
+          </div>
+          <div style="text-align:right">
+            <div class="survey-score">${s.avg_score?s.avg_score+' ⭐':'-'}</div>
+            <button onclick="verEncuesta(${JSON.stringify(s).replace(/"/g,'&quot;')})" style="font-size:11px;color:#3a86ff;background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px">Ver →</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const withScore = surveys.filter(s=>s.avg_score);
+    const avg = withScore.length ? (withScore.reduce((a,s)=>a+(s.avg_score||0),0)/withScore.length).toFixed(1) : '-';
+    const cap = surveys.filter(s=>s.app==='ComuniCAP').length;
+    const pro = surveys.filter(s=>s.app==='ComuniPro').length;
+    stats.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:#0f172a;border-radius:12px;padding:14px;text-align:center"><div style="font-size:26px;font-weight:900;color:#ffd166">${surveys.length}</div><div style="font-size:11px;color:#64748b">Total</div></div>
+        <div style="background:#0f172a;border-radius:12px;padding:14px;text-align:center"><div style="font-size:26px;font-weight:900;color:#22c55e">${avg} ⭐</div><div style="font-size:11px;color:#64748b">Puntaje prom.</div></div>
+        <div style="background:#0f172a;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#60a5fa">${cap}</div><div style="font-size:11px;color:#64748b">ComuniCAP</div></div>
+        <div style="background:#0f172a;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#86efac">${pro}</div><div style="font-size:11px;color:#64748b">ComuniPro</div></div>
+      </div>
+      <button onclick="exportCSV(${JSON.stringify(surveys).replace(/"/g,'&quot;')})" class="btn btn-primary">📥 Exportar CSV</button>`;
+  } catch(e) {
+    list.innerHTML='<div class="empty">Error al cargar</div>';
+  }
+}
+
+function verEncuesta(survey) {
+  const questions=['Facilidad de uso','Claridad pictogramas','Tamaño botones','Uso sin ayuda','Funciona offline','Pictogramas representativos','Claridad de voz','Usó emergencia','Armó frases','Pictogramas por frase','Usó favoritos','Usó búsqueda','Usó historial','Usó actividades','Utilidad panel dolor','Función más usada','Diseño visual','Colores ayudan','Tamaño adecuado','Mejora comunicación','Lo recomendaría','Perfil del usuario','Lo que más gustó','Qué cambiaría','Problemas técnicos'];
+  const ans = survey.answers||{};
+  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;overflow-y:auto;padding:16px">
+    <div style="background:#1e293b;border-radius:16px;padding:20px;max-width:500px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div><div style="font-weight:900;color:white">${survey.user_name}</div><div style="font-size:11px;color:#64748b">${survey.app} · ${survey.avg_score}⭐</div></div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:#334155;color:#94a3b8;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit">✕</button>
+      </div>`;
+  Object.entries(ans).forEach(([key,val])=>{
+    const qNum=parseInt(key.replace('q',''))-1;
+    const qText=questions[qNum]||key;
+    html+=`<div style="padding:8px 0;border-bottom:1px solid #334155"><div style="font-size:11px;color:#64748b">${qText}</div><div style="font-size:13px;font-weight:700;color:${typeof val==='number'?'#ffd166':val==='Sí'?'#86efac':val==='No'?'#fca5a5':'#e2e8f0'}">${typeof val==='number'?'⭐'.repeat(val)+` (${val}/5)`:val}</div></div>`;
+  });
+  html+=`</div></div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+function exportCSV(surveys) {
+  const qs=['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15','q16','q17','q18','q19','q20','q21','q22','q23','q24','q25'];
+  const headers=['Nombre','App','Código','Fecha','Puntaje',...qs];
+  const rows=surveys.map(s=>[s.user_name,s.app,s.user_code,s.submitted_at?.split('T')[0],s.avg_score,...qs.map(q=>(s.answers||{})[q]||'')]);
+  const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`evaluaciones_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); toast('📥 CSV descargado');
+}
+
+/* Cargar betas al entrar al tab */
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if (b.textContent.includes('Beta')) loadBetaCodes();
+    if (b.textContent.includes('Usuarios')) loadCodesAdmin();
+  });
+});
+</script>
+</body>
+</html>
