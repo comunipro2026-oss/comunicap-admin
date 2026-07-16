@@ -2970,16 +2970,22 @@ async function cargarHadrionUsers(orgId) {
 }
 
 function enviarWhatsAppHadrion(id) {
+  // Abrimos la pestaña YA, en el mismo instante del click, para que el
+  // navegador no la bloquee como popup (si esperamos a después del
+  // prompt(), Chrome/Firefox suelen bloquearla silenciosamente).
+  const win = window.open('', '_blank');
   const u = _currentHadrionUsers.find(x => String(x.id) === String(id));
-  if(!u){ showToast('❌ No se encontró el profesional','#ef4444'); return; }
+  if(!u){ showToast('❌ No se encontró el profesional','#ef4444'); if(win) win.close(); return; }
   let phone = (u.phone || '').replace(/[^0-9]/g,'');
   if(!phone){
     phone = prompt('No hay teléfono guardado para '+(u.name||'')+'. Ingresá el número con código de país (ej: 59899123456):');
-    if(!phone) return;
+    if(!phone){ if(win) win.close(); return; }
     phone = phone.replace(/[^0-9]/g,'');
   }
   const mensaje = `¡Hola ${u.name||''}! 👋 Tus datos de acceso a Hadrion:\n\n🌐 Sitio: https://hadrion.pages.dev/\n📧 Usuario: ${u.email||''}\n🔑 Contraseña: ${u.password||''}\n\n¡Cualquier duda avisame!`;
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`;
+  if(win) win.location.href = url;
+  else window.open(url, '_blank');
 }
 
 async function crearHadrionUser() {
