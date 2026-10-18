@@ -478,6 +478,8 @@ body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);min-
       <div class="login-sub">PANEL DE ADMINISTRACIÓN</div>
       <div class="login-owner">👩‍💼 HADRION — CREADORA Y TITULAR</div>
 
+      <input class="admin-input" id="loginEmail" type="email" placeholder="correo@ejemplo.com"
+             autocomplete="username" style="letter-spacing:1px;" onkeydown="if(event.key==='Enter')doLogin()">
       <input class="admin-input" id="loginPass" type="password" placeholder="••••••••"
              maxlength="40" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       <button class="admin-btn" onclick="doLogin()">🔐 INGRESAR AL PANEL</button>
@@ -1545,7 +1547,6 @@ body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);min-
       <div class="form-grid">
         <div class="form-group"><div class="form-label">NOMBRE</div><input class="form-input" id="huNombre" type="text"></div>
         <div class="form-group"><div class="form-label">EMAIL</div><input class="form-input" id="huEmail" type="email"></div>
-        <div class="form-group"><div class="form-label">CONTRASEÑA</div><input class="form-input" id="huPassword" type="text"></div>
         <div class="form-group"><div class="form-label">ROL</div>
           <select class="form-input" id="huRole">
             <option value="admin_org">Admin Org</option>
@@ -1579,60 +1580,102 @@ body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);min-
 ═══════════════════════════════════════════════════ */
 
 // ── SUPABASE CONFIG ──────────────────────────────
-// Worker seguro: todas las escrituras (POST/PATCH/DELETE) a licencias2,
-// organizaciones, pictogramas y org_usuarios pasan por acá — el anon key
-// de abajo ya NO tiene permiso de escribir (RLS activado). ADMIN_API_KEY
-// debe coincidir con el secreto homónimo cargado en el Worker de Cloudflare.
+// Autenticación: el administrador inicia sesión con Supabase Auth.
+// El access_token vive solo en memoria (se pierde al recargar) y se envía
+// al Worker seguro, que lo verifica en el servidor. No hay contraseñas
+// ni claves de administración en este archivo.
 const ADMIN_PROXY_URL = "https://comunicap-secure-proxy.comunipro12.workers.dev";
-const ADMIN_API_KEY = "U536VETka02Dn6XCKjaj0d61pXGrdcMoauA-uOZCKkQ";
-
 const SUPABASE_URL = "https://lgpqyjevdwstbnerawmp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncHF5amV2ZHdzdGJuZXJhd21wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMzM1OTgsImV4cCI6MjA5MjgwOTU5OH0.GMPbwHdxj_aRLaJgDHCkDA5L1KHAwLJLkO9LYOpI8pA";
+const TABLE = "licencias2";
+
+// Sesión del administrador (solo en memoria)
+let adminSession = null; // { access_token, user_id, email, expires_at }
+
+function adminAuthHeaders() {
+  if (!adminSession || !adminSession.access_token) {
+    throw new Error('Sesión vencida. Volvé a ingresar al panel.');
+  }
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminSession.access_token };
+}
 
 // Helper genérico para escrituras al proyecto de PictoCrisis (otro Supabase),
 // vía el mismo Worker seguro. path = ruta REST completa (tabla + query).
 async function pcAdminWrite(path, method, bodyObj) {
   const res = await fetch(ADMIN_PROXY_URL + '/admin/picto-db-write', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ adminKey: ADMIN_API_KEY, path, method, body: bodyObj || {} })
+    headers: adminAuthHeaders(),
+    body: JSON.stringify({ path, method, body: bodyObj || {} })
   });
   let data = null;
   try { data = await res.json(); } catch(_) {}
   if (!res.ok) throw new Error((data && data.error) || ('Error '+res.status));
   return data ? data.data : null;
 }
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncHF5amV2ZHdzdGJuZXJhd21wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMzM1OTgsImV4cCI6MjA5MjgwOTU5OH0.GMPbwHdxj_aRLaJgDHCkDA5L1KHAwLJLkO9LYOpI8pA";
-const TABLE = "licencias2";
-
-// ── CONTRASEÑA ADMIN (hash en producción) ────────
-const ADMIN_PASS = "Hadrion2026!";
 
 // ── INTENTOS DE LOGIN ────────────────────────────
 let loginAttempts = 0;
 let loginBlocked = false;
 
-function doLogin() {
+async function doLogin() {
   if(loginBlocked){ showLoginErr("⛔ Demasiados intentos. Esperá 5 minutos."); return; }
+  const email = (document.getElementById('loginEmail').value || '').trim();
   const pass = document.getElementById('loginPass').value;
-  if(pass === ADMIN_PASS) {
+  if(!email || !pass){ showLoginErr('Ingresá correo y contraseña'); return; }
+
+  const fallo = (msg) => {
+    loginAttempts++;
+    if(loginAttempts >= 5){
+      loginBlocked = true;
+      showLoginErr("⛔ Demasiados intentos. Esperá 5 minutos.");
+      setTimeout(()=>{ loginBlocked=false; loginAttempts=0; showLoginErr(''); }, 300000);
+    } else {
+      showLoginErr(msg || `❌ Correo o contraseña incorrectos (intento ${loginAttempts}/5)`);
+    }
+    document.getElementById('loginPass').value='';
+    document.getElementById('loginPass').focus();
+  };
+
+  try {
+    // 1) Login real contra Supabase Auth
+    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const j = await res.json().catch(() => ({}));
+    if(!res.ok || !j.access_token || !j.user){ fallo(); return; }
+
+    // 2) Verificar que la cuenta sea administrador global activo
+    const pr = await fetch(SUPABASE_URL + '/rest/v1/hadrion_users?auth_user_id=eq.' + j.user.id +
+      '&deletedAt=is.null&select=role,status', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + j.access_token }
+    });
+    const rows = await pr.json().catch(() => []);
+    if(!pr.ok || !Array.isArray(rows) || !rows.length || rows[0].role !== 'admin' || rows[0].status !== 'active'){
+      showLoginErr('Esta cuenta no tiene acceso de administrador.');
+      document.getElementById('loginPass').value='';
+      return;
+    }
+
+    // 3) Sesión en memoria
+    adminSession = {
+      access_token: j.access_token,
+      user_id: j.user.id,
+      email,
+      expires_at: Date.now() + (j.expires_in || 3600) * 1000
+    };
     loginAttempts = 0;
+    showLoginErr('');
+    document.getElementById('loginPass').value='';
     document.getElementById('splash').classList.add('hide');
     setTimeout(()=>{ document.getElementById('splash').style.display='none'; }, 500);
     document.getElementById('app').style.display = 'block';
     logActivity('🔐','Ingreso al panel de administración');
     cargarLicencias();
     cargarPrecios();
-  } else {
-    loginAttempts++;
-    if(loginAttempts >= 5){
-      loginBlocked = true;
-      showLoginErr("⛔ Cuenta bloqueada por 5 min.");
-      setTimeout(()=>{ loginBlocked=false; loginAttempts=0; showLoginErr(''); }, 300000);
-    } else {
-      showLoginErr(`❌ Contraseña incorrecta (intento ${loginAttempts}/5)`);
-      document.getElementById('loginPass').value='';
-      document.getElementById('loginPass').focus();
-    }
+  } catch(e) {
+    showLoginErr('No se pudo conectar. Revisá tu conexión e intentá de nuevo.');
   }
 }
 function showLoginErr(msg){ document.getElementById('loginErr').textContent=msg; }
@@ -1640,6 +1683,7 @@ function showLoginErr(msg){ document.getElementById('loginErr').textContent=msg;
 function logout() {
   if(!confirm('¿Cerrar sesión del panel?')) return;
   logActivity('🚪','Cierre de sesión');
+  adminSession = null;
   document.getElementById('app').style.display='none';
   document.getElementById('splash').style.display='flex';
   document.getElementById('splash').classList.remove('hide');
@@ -1721,9 +1765,12 @@ async function sbFetch(path, opts={}) {
 
   if (method === 'GET') {
     const url = SUPABASE_URL + '/rest/v1/' + path;
+    // Tablas de Hadrion: RLS exige sesión autenticada → usar el token del admin.
+    // Resto de tablas: se mantiene la lectura con anon (sin cambios).
+    const usaSesion = /^hadrion_/.test(path) && adminSession && adminSession.access_token;
     const headers = {
       'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Authorization': 'Bearer ' + (usaSesion ? adminSession.access_token : SUPABASE_KEY),
       'Content-Type': 'application/json',
     };
     if(opts.headers) Object.assign(headers, opts.headers);
@@ -1742,9 +1789,8 @@ async function sbFetch(path, opts={}) {
   // Escritura → Worker
   const res = await fetch(ADMIN_PROXY_URL + '/admin/db-write', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminAuthHeaders(),
     body: JSON.stringify({
-      adminKey: ADMIN_API_KEY,
       path,
       method,
       body: opts.body ? JSON.parse(opts.body) : {},
@@ -2982,7 +3028,7 @@ function enviarWhatsAppHadrion(id) {
     if(!phone){ if(win) win.close(); return; }
     phone = phone.replace(/[^0-9]/g,'');
   }
-  const mensaje = `¡Hola ${u.name||''}! 👋 Tus datos de acceso a Hadrion:\n\n🌐 Sitio: https://hadrion.pages.dev/\n📧 Usuario: ${u.email||''}\n🔑 Contraseña: ${u.password||''}\n\n¡Cualquier duda avisame!`;
+  const mensaje = `¡Hola ${u.name||''}! 👋 Te enviamos una invitación a Hadrion por correo (${u.email||''}).\n\nAbrí el mail, creá tu contraseña y después ingresá a:\n🌐 https://hadrion.pages.dev/\n\nSi no lo ves, revisá la carpeta de spam. ¡Cualquier duda avisame!`;
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`;
   if(win) win.location.href = url;
   else window.open(url, '_blank');
@@ -2992,22 +3038,26 @@ async function crearHadrionUser() {
   if(!_currentHadrionOrgId) return;
   const name      = document.getElementById('huNombre').value.trim();
   const email     = document.getElementById('huEmail').value.trim();
-  const password  = document.getElementById('huPassword').value.trim();
   const role      = document.getElementById('huRole').value;
   const plan      = document.getElementById('huPlan').value;
   const specialty = document.getElementById('huSpecialty').value.trim();
   const phone     = document.getElementById('huPhone').value.trim();
-  if(!name || !email || !password){ showToast('❌ Nombre, email y contraseña son obligatorios','#ef4444'); return; }
+  if(!name || !email){ showToast('❌ Nombre y email son obligatorios','#ef4444'); return; }
   const btn = document.getElementById('huCreateBtn');
-  btn.disabled=true; btn.textContent='⏳ CREANDO...';
+  btn.disabled=true; btn.textContent='⏳ ENVIANDO INVITACIÓN...';
   try {
-    await sbFetch(HADRION_USER_TABLE, {
-      method:'POST',
-      body: JSON.stringify({ org_id:_currentHadrionOrgId, name, email, password, role, specialty:specialty||null, plan, phone:phone||null, status:'active', avatar:(name[0]||'?').toUpperCase(), color:'#9B7EBD' })
+    // Alta vía Edge Function: crea el usuario de Auth, envía la invitación
+    // por correo (la persona elige su contraseña) y crea el perfil.
+    const res = await fetch(SUPABASE_URL + '/functions/v1/hadrion-invite-professional', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, ...adminAuthHeaders() },
+      body: JSON.stringify({ org_id:_currentHadrionOrgId, name, email, role, specialty:specialty||null, plan, phone:phone||null })
     });
-    showToast('✅ Profesional agregado: '+name,'#9B7EBD');
-    logActivity('➕','Profesional Hadrion creado: '+name);
-    ['huNombre','huEmail','huPassword','huSpecialty','huPhone'].forEach(id=>{ document.getElementById(id).value=''; });
+    const j = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(j.error || ('Error '+res.status));
+    showToast('✅ Invitación enviada a '+email,'#9B7EBD');
+    logActivity('➕','Profesional Hadrion invitado: '+name);
+    ['huNombre','huEmail','huSpecialty','huPhone'].forEach(id=>{ document.getElementById(id).value=''; });
     cargarHadrionUsers(_currentHadrionOrgId);
   } catch(e){ showToast('❌ '+e.message,'#ef4444'); }
   finally { btn.disabled=false; btn.textContent='✨ AGREGAR PROFESIONAL'; }
